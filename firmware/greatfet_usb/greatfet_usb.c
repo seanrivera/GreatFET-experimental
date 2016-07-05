@@ -25,6 +25,7 @@
 
 #include <libopencm3/cm3/vector.h>
 #include <libopencm3/lpc43xx/m4/nvic.h>
+#include <libopencm3/lpc43xx/rtc.h> 
 
 #include <greatfet_core.h>
 
@@ -39,9 +40,10 @@
 #include "usb_api_spiflash.h"
 #include "usb_api_spiflash_spansion.h"
 #include "usb_bulk_buffer.h"
+#include "rtc_isr.h"
 
 usb_request_status_t usb_vendor_request_enable_usb1(
-	usb_endpoint_t* const endpoint, const usb_transfer_stage_t stage);
+		usb_endpoint_t* const endpoint, const usb_transfer_stage_t stage);
 
 usb_request_status_t usb_vendor_request_led_toggle(
 		usb_endpoint_t* const endpoint, const usb_transfer_stage_t stage)
@@ -79,13 +81,13 @@ static const usb_request_handler_fn usb0_vendor_request_handler[] = {
 };
 
 static const uint32_t usb0_vendor_request_handler_count =
-	sizeof(usb0_vendor_request_handler) / sizeof(usb0_vendor_request_handler[0]);
+sizeof(usb0_vendor_request_handler) / sizeof(usb0_vendor_request_handler[0]);
 
 usb_request_status_t usb0_vendor_request(
-	usb_endpoint_t* const endpoint,
-	const usb_transfer_stage_t stage) {
+		usb_endpoint_t* const endpoint,
+		const usb_transfer_stage_t stage) {
 	usb_request_status_t status = USB_REQUEST_STATUS_STALL;
-	
+
 	if( endpoint->setup.request < usb0_vendor_request_handler_count ) {
 		usb_request_handler_fn handler = usb0_vendor_request_handler[endpoint->setup.request];
 		if( handler ) {
@@ -122,15 +124,15 @@ void usb0_configuration_changed(usb_device_t* const device)
 void usb_set_descriptor_by_serial_number(void)
 {
 	iap_cmd_res_t iap_cmd_res;
-	
+
 	/* Read IAP Serial Number Identification */
 	iap_cmd_res.cmd_param.command_code = IAP_CMD_READ_SERIAL_NO;
 	iap_cmd_call(&iap_cmd_res);
-		
+
 	if (iap_cmd_res.status_res.status_ret == CMD_SUCCESS) {
 		usb0_descriptor_string_serial_number[0] = USB_DESCRIPTOR_STRING_SERIAL_BUF_LEN;
 		usb0_descriptor_string_serial_number[1] = USB_DESCRIPTOR_TYPE_STRING;
-		
+
 		/* 32 characters of serial number, convert to UTF-16LE */
 		for (size_t i=0; i<USB_DESCRIPTOR_STRING_SERIAL_LEN; i++) {
 			const uint_fast8_t nibble = (iap_cmd_res.status_res.iap_result[i >> 3] >> (28 - (i & 7) * 4)) & 0xf;
@@ -214,7 +216,32 @@ int main(void) {
 	led_off(LED3);
 
 	init_usb0();
-	
+	//start the rtc
+	RTC_CCR &= (~RTC_CCR_CLKEN_MASK);
+	RTC_CCR |= RTC_CCR_CCALEN_MASK;
+        do {
+                /* Reset RTC clock*/
+                RTC_CCR |= RTC_CCR_CTCRST_MASK;
+        } while ((RTC_CCR & RTC_CCR_CTCRST_MASK) != RTC_CCR_CTCRST_MASK);
+
+        do {
+                /* Finish resetting RTC clock */
+                RTC_CCR &= (~RTC_CCR_CTCRST_MASK) & RTC_CCR;
+        } while (RTC_CCR & RTC_CCR_CTCRST_MASK);
+
+	RTC_ILR = RTC_ILR_RTCCIF_MASK | RTC_ILR_RTCALF_MASK;
+	//nvic_enable_irq(NVIC_RTC_IRQ);
+	//nvic_set_priority(NVIC_RTC_IRQ, 1);
+	//vector_table.irq[NVIC_RTC_IRQ] = rtc_isr;
+
+	RTC_CIIR = RTC_CIIR_IMMIN_MASK;
+	RTC_AMR= 0xff;
+	RTC_CALIBRATION=0; 
+	do{
+		RTC_CCR |= RTC_CCR_CLKEN_MASK;
+	}
+	while ((RTC_CCR & RTC_CCR_CLKEN_MASK) == 0); 
+
 	while(true) {
 		/* Blink LED4 to let us know we're alive */
 		led_off(LED4);
@@ -222,6 +249,6 @@ int main(void) {
 		led_on(LED4);
 		delay(20000000);
 	}
-	
+
 	return 0;
 }

@@ -63,4 +63,4 @@ if __name__ == '__main__':
     
     #vendor_request_out(usb_vendor_request_led_toggle, 4)
     
-    vendor_request_out(usb_vendor_request_enable_usb1)
+    print vendor_request_out(usb_vendor_request_enable_usb1)
