@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2016 Sean Rivera
  *
@@ -19,13 +20,14 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include "rtc_isr.h" 
-#include <libopencm3/lpc43xx/rtc.h> 
-#include "greatfet_core.h"
+#ifndef __RTC_H__
+#define __RTC_H__
 
-void rtc_isr(void){
-	RTC_ILR = RTC_ILR_RTCCIF_MASK;
-	led_on(LED3);
-	delay(20000000);
-	led_off(LED3);
-}
+void init_rtc (void); 
+
+#define CGU_CLKSRC_32KHZ_OSC 0                                       /**< 32KHz oscillator clock source      */
+
+
+#endif/*__RTC_H__*/
+
+

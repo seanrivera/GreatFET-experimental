@@ -31,6 +31,7 @@
 
 #include "usb.h"
 #include "usb_standard_request.h"
+#include "rtc.h"
 
 #include <rom_iap.h>
 #include "usb_descriptor.h"
@@ -215,39 +216,35 @@ int main(void) {
 	led_on(LED2);
 	led_off(LED3);
 
-	init_usb0();
+	//init_usb0();
 	//start the rtc
-	RTC_CCR &= (~RTC_CCR_CLKEN_MASK);
-	RTC_CCR |= RTC_CCR_CCALEN_MASK;
-        do {
-                /* Reset RTC clock*/
-                RTC_CCR |= RTC_CCR_CTCRST_MASK;
-        } while ((RTC_CCR & RTC_CCR_CTCRST_MASK) != RTC_CCR_CTCRST_MASK);
-
-        do {
-                /* Finish resetting RTC clock */
-                RTC_CCR &= (~RTC_CCR_CTCRST_MASK) & RTC_CCR;
-        } while (RTC_CCR & RTC_CCR_CTCRST_MASK);
-
-	RTC_ILR = RTC_ILR_RTCCIF_MASK | RTC_ILR_RTCALF_MASK;
+	init_rtc(); 
+	/*set the rtc time */ 
+	RTC_SEC = 0 & RTC_SEC_SECONDS_MASK; 
+	RTC_MIN = 30 & RTC_MIN_MINUTES_MASK; 
+	RTC_HRS = 11 & RTC_HRS_HOURS_MASK; 
+	RTC_DOM = 12 & RTC_DOM_DOM_MASK;
+	RTC_MONTH = 7 & RTC_MONTH_MONTH_MASK; 
+	RTC_YEAR = 2016 & RTC_YEAR_YEAR_MASK;
+	
+	
+	do{
+	RTC_CIIR = RTC_CIIR_IMSEC_MASK ;
+	} while ((RTC_CIIR & RTC_CIIR_IMSEC_MASK) == 0);
+	
+	led_on(LED3);
+	delay(20000000);
+	led_off(LED3); 
+	delay(20000000);
 	//nvic_enable_irq(NVIC_RTC_IRQ);
 	//nvic_set_priority(NVIC_RTC_IRQ, 1);
-	//vector_table.irq[NVIC_RTC_IRQ] = rtc_isr;
-
-	RTC_CIIR = RTC_CIIR_IMMIN_MASK;
-	RTC_AMR= 0xff;
-	RTC_CALIBRATION=0; 
-	do{
-		RTC_CCR |= RTC_CCR_CLKEN_MASK;
-	}
-	while ((RTC_CCR & RTC_CCR_CLKEN_MASK) == 0); 
 
 	while(true) {
 		/* Blink LED4 to let us know we're alive */
 		led_off(LED4);
-		delay(20000000);
+		delay(2000000);
 		led_on(LED4);
-		delay(20000000);
+		delay(2000000);
 	}
 
 	return 0;
