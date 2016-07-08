@@ -212,7 +212,7 @@ usb_request_status_t usb_vendor_request_enable_usb1(
 int main(void) {
 	pin_setup();
 	led_on(LED1);
-	cpu_clock_init();
+	//cpu_clock_init();
 	led_on(LED2);
 	led_off(LED3);
 
@@ -229,15 +229,20 @@ int main(void) {
 	
 	
 	do{
-	RTC_CIIR = RTC_CIIR_IMSEC_MASK ;
-	} while ((RTC_CIIR & RTC_CIIR_IMSEC_MASK) == 0);
+	RTC_CIIR = RTC_CIIR_IMMIN_MASK ;
+	} while ((RTC_CIIR & RTC_CIIR_IMMIN_MASK) == 0);
 	
 	led_on(LED3);
 	delay(20000000);
 	led_off(LED3); 
 	delay(20000000);
-	//nvic_enable_irq(NVIC_RTC_IRQ);
-	//nvic_set_priority(NVIC_RTC_IRQ, 1);
+	
+	vector_table.irq[NVIC_RTC_IRQ] = rtc_isr_blinky;
+	vector_table.irq[NVIC_EVENTROUTER_IRQ] = EVRT_IRQHandler;
+	nvic_enable_irq(NVIC_EVENTROUTER_IRQ);
+	RTC_AMR = 0;
+	RTC_ASEC = 5 & RTC_ASEC_SECONDS_MASK;
+	RTC_CCR |= RTC_CCR_CLKEN_MASK;
 
 	while(true) {
 		/* Blink LED4 to let us know we're alive */

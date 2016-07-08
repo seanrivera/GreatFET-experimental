@@ -21,11 +21,15 @@
 
 #include "rtc_isr.h" 
 #include <libopencm3/lpc43xx/rtc.h> 
+#include <libopencm3/lpc43xx/m4/nvic.h> 
 #include "greatfet_core.h"
 
-void rtc_isr(void){
-	RTC_ILR = RTC_ILR_RTCCIF_MASK;
-	led_on(LED3);
-	delay(20000000);
-	led_off(LED3);
+void rtc_isr_blinky(void){
+	RTC_ILR = RTC_ILR_RTCCIF_MASK | RTC_ILR_RTCALF_MASK;
+	led_toggle(LED3);
 }
+void EVRT_IRQHandler(void) {
+	nvic_clear_pending_irq(NVIC_EVENTROUTER_IRQ);
+        rtc_isr_blinky();
+}
+

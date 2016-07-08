@@ -52,7 +52,7 @@ void init_rtc (void) {
 	RTC_AMR = 0xFF;
 	RTC_CALIBRATION = 0x00;
  
-    	nvic_set_priority(NVIC_RTC_IRQ, 1);
+    	nvic_set_priority(NVIC_RTC_IRQ, 0xFF);
 	nvic_enable_irq(NVIC_RTC_IRQ);
 
 }

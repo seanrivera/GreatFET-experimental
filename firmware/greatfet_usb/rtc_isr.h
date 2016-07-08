@@ -22,7 +22,8 @@
 #ifndef __RTC_ISR_H__
 #define __RTC_ISR_H__
 
-void rtc_isr();
+void rtc_isr_blinky();
+void EVRT_IRQHandler(void);
 
 
 #endif/*__RTC_ISR_H__*/
